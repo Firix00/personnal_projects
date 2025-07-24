@@ -4,11 +4,11 @@ from datetime import datetime
 import requests
 from flask import Flask
 
-# Telegram credentials
+# Telegram Bot credentials
 BOT_TOKEN = '8347188783:AAF0IMvlnvvY6RI2nh6LClyntfi7OZr0u9c'
 CHAT_ID = 6441176243
 
-# Messages personnalisés
+# Messages
 messages = {
     "lust_control": (
         "CONTROL YOURSELF ! PLEASE\n"
@@ -30,6 +30,7 @@ messages = {
     )
 }
 
+# Send Telegram message
 def send_message(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": text}
@@ -39,18 +40,27 @@ def send_message(text):
     if res.status_code != 200:
         print("Error:", res.text)
 
+# Check if we are outside quiet hours
+def is_active_hours():
+    now = datetime.now()
+    return 7 <= now.hour < 24  # From 07:00 to 23:59
+
+# Reminder loop
 def reminder_loop():
     counter = 0
     while True:
         time.sleep(60)
         counter += 1
 
-        if counter % 15 == 0:
-            send_message(messages["project_time"])
-        elif counter % 10 == 0:
-            send_message(messages["sport"])
-        elif counter % 5 == 0:
-            send_message(messages["lust_control"])
+        if is_active_hours():
+            if counter % 15 == 0:
+                send_message(messages["project_time"])
+            elif counter % 10 == 0:
+                send_message(messages["sport"])
+            elif counter % 5 == 0:
+                send_message(messages["lust_control"])
+        else:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Quiet hours... ⏳")
 
         if counter >= 60:
             counter = 0
@@ -58,7 +68,7 @@ def reminder_loop():
 # Start reminder thread
 threading.Thread(target=reminder_loop, daemon=True).start()
 
-# Flask healthcheck endpoint
+# Flask server for health check
 app = Flask(__name__)
 
 @app.route('/')
